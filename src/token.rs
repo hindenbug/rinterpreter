@@ -12,6 +12,14 @@ pub enum TokenType {
     //OPERATORS
     ASSIGN,
     PLUS,
+    MINUS,
+    BANG,
+    ASTERISK,
+    SLASH,
+    LT,
+    GT,
+    EQ,
+    NOTEQ,
 
     //DELIMITERS
     COMMA,
@@ -23,20 +31,25 @@ pub enum TokenType {
 
     //KEYWORDS
     FUNCTION,
-    LET
+    LET,
+    TRUE,
+    FALSE,
+    IF,
+    ELSE,
+    RETURN,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
-    pub literal: String
+    pub literal: String,
 }
 
 impl Token {
     pub fn new(token_type: TokenType, literal: String) -> Self {
         Token {
             token_type: token_type,
-            literal: literal
+            literal: literal,
         }
     }
 }
@@ -45,9 +58,13 @@ pub fn lookup_identifier(identifier: &str) -> TokenType {
     match identifier {
         "fn" => TokenType::FUNCTION,
         "let" => TokenType::LET,
+        "true" => TokenType::TRUE,
+        "false" => TokenType::FALSE,
+        "if" => TokenType::IF,
+        "else" => TokenType::ELSE,
+        "return" => TokenType::RETURN,
         _ => TokenType::IDENT,
     }
-
 }
 
 #[derive(Debug)]
@@ -60,6 +77,12 @@ impl FromStr for TokenType {
         match s {
             "=" => Ok(TokenType::ASSIGN),
             "+" => Ok(TokenType::PLUS),
+            "-" => Ok(TokenType::MINUS),
+            "!" => Ok(TokenType::BANG),
+            "*" => Ok(TokenType::ASTERISK),
+            "/" => Ok(TokenType::SLASH),
+            "<" => Ok(TokenType::LT),
+            ">" => Ok(TokenType::GT),
             "," => Ok(TokenType::COMMA),
             ";" => Ok(TokenType::SEMICOLON),
             "(" => Ok(TokenType::LEFTPAREN),
@@ -68,6 +91,11 @@ impl FromStr for TokenType {
             "}" => Ok(TokenType::RIGHTBRACE),
             "fn" => Ok(TokenType::FUNCTION),
             "let" => Ok(TokenType::LET),
+            "true" => Ok(TokenType::TRUE),
+            "false" => Ok(TokenType::FALSE),
+            "if" => Ok(TokenType::IF),
+            "else" => Ok(TokenType::ELSE),
+            "return" => Ok(TokenType::RETURN),
             _ => Err(ParseTokenError),
         }
     }
@@ -85,16 +113,29 @@ mod tests {
 
     #[test]
     fn parse_test() {
-        let tests = vec![("=", TokenType::ASSIGN),
-                         ("+", TokenType::PLUS),
-                         (",", TokenType::COMMA),
-                         (";", TokenType::SEMICOLON),
-                         ("(", TokenType::LEFTPAREN),
-                         (")", TokenType::RIGHTPAREN),
-                         ("{", TokenType::LEFTBRACE),
-                         ("}", TokenType::RIGHTBRACE),
-                         ("fn", TokenType::FUNCTION),
-                         ("let", TokenType::LET)];
+        let tests = vec![
+            ("=", TokenType::ASSIGN),
+            ("+", TokenType::PLUS),
+            ("-", TokenType::MINUS),
+            ("!", TokenType::BANG),
+            ("*", TokenType::ASTERISK),
+            ("/", TokenType::SLASH),
+            ("<", TokenType::LT),
+            (">", TokenType::GT),
+            (",", TokenType::COMMA),
+            (";", TokenType::SEMICOLON),
+            ("(", TokenType::LEFTPAREN),
+            (")", TokenType::RIGHTPAREN),
+            ("{", TokenType::LEFTBRACE),
+            ("}", TokenType::RIGHTBRACE),
+            ("fn", TokenType::FUNCTION),
+            ("let", TokenType::LET),
+            ("true", TokenType::TRUE),
+            ("false", TokenType::FALSE),
+            ("if", TokenType::IF),
+            ("else", TokenType::ELSE),
+            ("return", TokenType::RETURN),
+        ];
 
         for (s, e) in tests {
             assert_eq!(s.parse::<TokenType>().unwrap(), e);
