@@ -129,9 +129,9 @@ if (5 < 10) {
 } else {
   return false;
 }
+10 == 10;
+10 != 9;
 "#;
-        //let result = add(five, ten);";
-
         let mut tests = Vec::new();
         tests.push(token::Token::new(token::TokenType::LET, "let".to_string()));
         tests.push(token::Token::new(
@@ -201,16 +201,159 @@ if (5 < 10) {
             token::TokenType::SEMICOLON,
             ";".to_string(),
         ));
-        // tests.push(token::Token::new(token::TokenType::LET, "let".to_string()));
-        // tests.push(token::Token::new(token::TokenType::IDENT, "result".to_string()));
-        // tests.push(token::Token::new(token::TokenType::ASSIGN, "=".to_string()));
-        // tests.push(token::Token::new(token::TokenType::FUNCTION, "add".to_string()));
-        // tests.push(token::Token::new(token::TokenType::LEFTPAREN, "(".to_string()));
-        // tests.push(token::Token::new(token::TokenType::IDENT, "five".to_string()));
-        // tests.push(token::Token::new(token::TokenType::COMMA, ",".to_string()));
-        // tests.push(token::Token::new(token::TokenType::IDENT, "ten".to_string()));
-        // tests.push(token::Token::new(token::TokenType::RIGHTPAREN, ")".to_string()));
-        // tests.push(token::Token::new(token::TokenType::SEMICOLON, ";".to_string()));
+        tests.push(token::Token::new(token::TokenType::LET, "let".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::IDENT,
+            "result".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::ASSIGN, "=".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::IDENT,
+            "add".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::LEFTPAREN,
+            "(".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::IDENT,
+            "five".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::COMMA, ",".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::IDENT,
+            "ten".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::RIGHTPAREN,
+            ")".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::BANG, "!".to_string()));
+        tests.push(token::Token::new(token::TokenType::MINUS, "-".to_string()));
+        tests.push(token::Token::new(token::TokenType::SLASH, "/".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::ASTERISK,
+            "*".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "5".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "5".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::LT, "<".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "10".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::GT, ">".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "5".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::IF, "if".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::LEFTPAREN,
+            "(".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "5".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::LT, "<".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "10".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::RIGHTPAREN,
+            ")".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::LEFTBRACE,
+            "{".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::RETURN,
+            "return".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::TRUE,
+            "true".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
+
+        tests.push(token::Token::new(
+            token::TokenType::RIGHTBRACE,
+            "}".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::ELSE,
+            "else".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::LEFTBRACE,
+            "{".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::RETURN,
+            "return".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::FALSE,
+            "false".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::RIGHTBRACE,
+            "}".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "10".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::EQ, "==".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "10".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "10".to_string(),
+        ));
+        tests.push(token::Token::new(token::TokenType::NOTEQ, "!=".to_string()));
+        tests.push(token::Token::new(
+            token::TokenType::INTEGER,
+            "9".to_string(),
+        ));
+        tests.push(token::Token::new(
+            token::TokenType::SEMICOLON,
+            ";".to_string(),
+        ));
 
         let mut lexer = Lexer::new(&input);
 
