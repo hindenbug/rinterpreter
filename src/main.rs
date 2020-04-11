@@ -1,5 +1,13 @@
-extern crate rinterpreter;
+use rinterpreter::repl;
+use std::io;
+use whoami;
 
-use std::io::{self, BufRead, Write};
+fn main() -> Result<(), std::io::Error> {
+    let user = whoami::username();
+    println!("Hello {}!, Welcome to the Rinterpreter REPL!", user);
+    let mut stdin = io::BufReader::new(io::stdin());
+    let mut stdout = io::BufWriter::new(io::stdout());
 
-fn main() {}
+    repl::start(&mut stdin, &mut stdout)?;
+    Ok(())
+}
