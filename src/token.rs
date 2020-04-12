@@ -48,8 +48,8 @@ pub struct Token {
 impl Token {
     pub fn new(token_type: TokenType, literal: String) -> Self {
         Token {
-            token_type: token_type,
-            literal: literal,
+            token_type,
+            literal,
         }
     }
 }

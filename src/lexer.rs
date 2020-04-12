@@ -47,7 +47,7 @@ impl<'a> Lexer<'a> {
                     let token_type = literal
                         .parse::<token::TokenType>()
                         .unwrap_or(token::TokenType::EOF);
-                    //println!("{:?}", token_type);
+                    //  println!("{:?}", token_type);
 
                     token::Token::new(token_type, literal)
                 }
