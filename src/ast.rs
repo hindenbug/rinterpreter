@@ -1,4 +1,5 @@
 use crate::token::Token;
+use std::fmt;
 pub trait Node {
     fn token_literal(&self) -> &str;
 }
@@ -25,9 +26,9 @@ impl Node for Program {
 }
 
 pub struct LetStatement {
-    token: Token,
-    name: Identifier,
-    value: Expression,
+    pub token: Token,
+    pub name: Identifier,
+    //value: Expression,
 }
 
 impl Statement for LetStatement {
@@ -43,8 +44,8 @@ impl Node for LetStatement {
 }
 
 pub struct Identifier {
-    token: Token,
-    value: String,
+    pub token: Token,
+    pub value: String,
 }
 
 impl Expression for Identifier {

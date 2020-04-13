@@ -2,6 +2,7 @@ use crate::token;
 use std::iter::Peekable;
 use std::str::Chars;
 
+#[derive(Debug)]
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }
