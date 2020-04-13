@@ -19,6 +19,7 @@ pub struct Parser<'a> {
     lexer: Lexer<'a>,
     current_token: Token,
     peek_token: Token,
+    errors: Vec<ParseError>,
 }
 
 impl<'a> Parser<'a> {
@@ -29,6 +30,7 @@ impl<'a> Parser<'a> {
             lexer,
             current_token: current_token,
             peek_token: peek_token,
+            errors: vec![],
         }
     }
 
@@ -37,23 +39,25 @@ impl<'a> Parser<'a> {
         self.peek_token = self.lexer.next_token();
     }
 
-    pub fn parse_program(&mut self) -> Result<Program, ParseError> {
+    pub fn parse_program(&mut self) -> Program {
         let mut statements: Vec<Box<dyn Statement>> = vec![];
         while !self.current_token_is(&TokenType::EOF) {
             match self.parse_statement() {
                 Ok(stmt) => statements.push(stmt),
-                Err(error) => break,
+                Err(error) => self.errors.push(error),
             }
             self.next_token();
         }
-        Ok(Program { statements })
+
+        // handle errors
+        Program { statements }
     }
 
     fn parse_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
         match self.current_token.token_type {
             TokenType::LET => self.parse_let_statement(),
             _ => Err(ParseError {
-                message: "Unexpected Token".to_string(),
+                message: "Some error".to_string(),
             }),
         }
     }
@@ -63,11 +67,12 @@ impl<'a> Parser<'a> {
 
         if !self.expect_peek(&TokenType::IDENT) {
             return Err(ParseError {
-                message: "Let statement parse error".to_string(),
+                message: format!(
+                    "expected next token to be IDENT, got {:?} instead.",
+                    self.peek_token.token_type
+                ),
             });
         }
-
-        println!("{:?}", self.current_token);
 
         let identifier = Identifier {
             token: self.current_token.clone(),
@@ -76,7 +81,10 @@ impl<'a> Parser<'a> {
 
         if !self.expect_peek(&TokenType::ASSIGN) {
             return Err(ParseError {
-                message: "Let statement parse error".to_string(),
+                message: format!(
+                    "expected next token to be ASSIGN, got {:?} instead.",
+                    self.peek_token.token_type
+                ),
             });
         }
 
@@ -104,6 +112,12 @@ impl<'a> Parser<'a> {
             self.next_token();
             return true;
         } else {
+            self.errors.push(ParseError {
+                message: format!(
+                    "expected next token to be {:?}, got {:?} instead",
+                    t, self.peek_token.token_type
+                ),
+            });
             return false;
         }
     }
@@ -122,15 +136,39 @@ let foobar = 838383;
             "#;
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-        println!("{:?}", parser);
-        match parser.parse_program() {
-            Ok(p) => {
-                assert_eq!(3, p.statements.len());
-                for s in p.statements {
-                    assert_eq!("let".to_owned(), s.token_literal());
-                }
-            }
-            Err(err) => panic!("{}", err),
+
+        let program = parser.parse_program();
+
+        assert_eq!(3, program.statements.len());
+        for s in program.statements {
+            assert_eq!("let".to_owned(), s.token_literal());
         }
+    }
+
+    #[test]
+    fn test_invalid_statement() {
+        let input = r#"
+let x = 5;
+let = 10;
+let foobar = 838383;
+        "#;
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        parser.parse_program();
+        check_parser_errors(&parser);
+        assert_eq!(parser.errors.len(), 5);
+    }
+
+    fn check_parser_errors(parser: &Parser) {
+        if parser.errors.is_empty() {
+            return;
+        }
+
+        println!("Parser has {} errors", parser.errors.len());
+        parser
+            .errors
+            .iter()
+            .for_each(|err| eprintln!("parser error: {}", err));
     }
 }
