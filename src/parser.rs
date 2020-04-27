@@ -1,4 +1,4 @@
-use crate::ast::{Identifier, LetStatement, Program, Statement};
+use crate::ast::{Identifier, LetStatement, Program, ReturnStatement, Statement};
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 use std::fmt;
@@ -56,6 +56,7 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
         match self.current_token.token_type {
             TokenType::LET => self.parse_let_statement(),
+            TokenType::RETURN => self.parse_return_statement(),
             _ => Err(ParseError {
                 message: "Some error".to_string(),
             }),
@@ -88,7 +89,7 @@ impl<'a> Parser<'a> {
             });
         }
 
-        // TODO: We're skipping the expressions until we // encounter a semicolon
+        // TODO: We're skipping the expressions until we encounter a semicolon
         while !self.current_token_is(&TokenType::SEMICOLON) {
             self.next_token();
         }
@@ -97,6 +98,16 @@ impl<'a> Parser<'a> {
             token: token,
             name: identifier,
         }))
+    }
+
+    fn parse_return_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
+        let token = self.current_token.clone();
+
+        while !self.current_token_is(&TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Ok(Box::new(ReturnStatement { token: token }))
     }
 
     fn current_token_is(&self, t: &TokenType) -> bool {
@@ -155,9 +166,30 @@ let foobar = 838383;
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
+
         parser.parse_program();
         check_parser_errors(&parser);
+
         assert_eq!(parser.errors.len(), 5);
+    }
+
+    #[test]
+    fn test_return_statements() {
+        let input = r#"
+return 5;
+return 10;
+return 993322;
+            "#;
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        check_parser_errors(&parser);
+
+        assert_eq!(3, program.statements.len());
+        for s in program.statements {
+            assert_eq!("return".to_owned(), s.token_literal());
+        }
     }
 
     fn check_parser_errors(parser: &Parser) {

@@ -25,6 +25,23 @@ impl Node for Program {
     }
 }
 
+pub struct ReturnStatement {
+    pub token: Token,
+    //pub return_value: Expression,
+}
+
+impl Statement for ReturnStatement {
+    fn statement_node(&self) {
+        unimplemented!();
+    }
+}
+
+impl Node for ReturnStatement {
+    fn token_literal(&self) -> &str {
+        self.token.literal.as_str()
+    }
+}
+
 pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
