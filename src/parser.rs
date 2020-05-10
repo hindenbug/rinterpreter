@@ -95,8 +95,9 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Box::new(LetStatement {
-            token: token,
+            token,
             name: identifier,
+            value: None,
         }))
     }
 
@@ -107,7 +108,7 @@ impl<'a> Parser<'a> {
             self.next_token();
         }
 
-        Ok(Box::new(ReturnStatement { token: token }))
+        Ok(Box::new(ReturnStatement { token }))
     }
 
     fn current_token_is(&self, t: &TokenType) -> bool {
@@ -119,9 +120,9 @@ impl<'a> Parser<'a> {
     }
 
     fn expect_peek(&mut self, t: &TokenType) -> bool {
-        if self.peek_token_is(t) {
+        return if self.peek_token_is(t) {
             self.next_token();
-            return true;
+            true
         } else {
             self.errors.push(ParseError {
                 message: format!(
@@ -129,8 +130,8 @@ impl<'a> Parser<'a> {
                     t, self.peek_token.token_type
                 ),
             });
-            return false;
-        }
+            false
+        };
     }
 }
 
