@@ -1,7 +1,10 @@
-use crate::ast::{Identifier, LetStatement, Program, ReturnStatement, Statement};
+use crate::ast::{
+    Expression, ExpressionStatement, Identifier, LetStatement, Program, ReturnStatement, Statement,
+};
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 use std::fmt;
+use std::thread::current;
 
 #[derive(Debug)]
 pub struct ParseError {
@@ -12,6 +15,17 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.message)
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Precedence {
+    LOWEST,
+    EQUALS,      // ==
+    LESSGREATER, // < OR >
+    SUM,         // +
+    PRODUCT,     // *
+    PREFIX,      // -X OR !X
+    CALL,        // func()
 }
 
 #[derive(Debug)]
@@ -28,8 +42,8 @@ impl<'a> Parser<'a> {
         let peek_token = lexer.next_token();
         Parser {
             lexer,
-            current_token: current_token,
-            peek_token: peek_token,
+            current_token,
+            peek_token,
             errors: vec![],
         }
     }
@@ -57,10 +71,40 @@ impl<'a> Parser<'a> {
         match self.current_token.token_type {
             TokenType::LET => self.parse_let_statement(),
             TokenType::RETURN => self.parse_return_statement(),
+            _ => self.parse_expression_statement(),
+        }
+    }
+
+    fn parse_expression_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
+        //TODO handle error ParseError
+        let expression = self.parse_expression(Precedence::LOWEST as i8)?;
+        let stmt = ExpressionStatement {
+            token: self.current_token.to_owned(),
+            expression: Some(expression),
+        };
+
+        if self.peek_token_is(&TokenType::SEMICOLON) {
+            self.next_token();
+        }
+
+        Ok(Box::new(stmt))
+    }
+
+    fn parse_expression(&self, _precedence: i8) -> Result<Box<dyn Expression>, ParseError> {
+        match self.current_token.token_type {
+            TokenType::IDENT => self.parse_identifier(),
             _ => Err(ParseError {
-                message: "Some error".to_string(),
+                message: format!("expected IDENT, got = {:?}", self.current_token.token_type),
             }),
         }
+    }
+
+    fn parse_identifier(&self) -> Result<Box<dyn Expression>, ParseError> {
+        //TODO handle ParseError
+        Ok(Box::new(Identifier {
+            token: self.current_token.to_owned(),
+            value: self.current_token.literal.to_owned(),
+        }))
     }
 
     fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
@@ -167,7 +211,6 @@ let foobar = 838383;
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-
         parser.parse_program();
         check_parser_errors(&parser);
 
@@ -183,13 +226,27 @@ return 993322;
             "#;
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-
         let program = parser.parse_program();
         check_parser_errors(&parser);
 
         assert_eq!(3, program.statements.len());
         for s in program.statements {
             assert_eq!("return".to_owned(), s.token_literal());
+        }
+    }
+
+    #[test]
+    fn test_identifier_expression() {
+        let input = r#"foobar;"#;
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        check_parser_errors(&parser);
+
+        assert_eq!(1, program.statements.len());
+
+        for s in program.statements {
+            assert_eq!(s.token_literal().to_owned(), "foobar");
         }
     }
 
