@@ -1,5 +1,6 @@
 use crate::ast::{
-    Expression, ExpressionStatement, Identifier, LetStatement, Program, ReturnStatement, Statement,
+    Expression, ExpressionStatement, Identifier, IntegerLiteral, LetStatement, Program,
+    ReturnStatement, Statement,
 };
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -77,10 +78,10 @@ impl<'a> Parser<'a> {
 
     fn parse_expression_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
         //TODO handle error ParseError
-        let expression = self.parse_expression(Precedence::LOWEST as i8)?;
+        let expression = self.parse_expression(Precedence::LOWEST as i8);
         let stmt = ExpressionStatement {
             token: self.current_token.to_owned(),
-            expression: Some(expression),
+            expression,
         };
 
         if self.peek_token_is(&TokenType::SEMICOLON) {
@@ -90,12 +91,11 @@ impl<'a> Parser<'a> {
         Ok(Box::new(stmt))
     }
 
-    fn parse_expression(&self, _precedence: i8) -> Result<Box<dyn Expression>, ParseError> {
+    fn parse_expression(&mut self, _precedence: i8) -> Option<Box<dyn Expression>> {
         match self.current_token.token_type {
-            TokenType::IDENT => self.parse_identifier(),
-            _ => Err(ParseError {
-                message: format!("expected IDENT, got = {:?}", self.current_token.token_type),
-            }),
+            TokenType::IDENT => Some(self.parse_identifier().ok()?),
+            TokenType::INTEGER => Some(self.parse_integer_literal().ok()?),
+            _ => None,
         }
     }
 
@@ -105,6 +105,20 @@ impl<'a> Parser<'a> {
             token: self.current_token.to_owned(),
             value: self.current_token.literal.to_owned(),
         }))
+    }
+
+    fn parse_integer_literal(&mut self) -> Result<Box<dyn Expression>, ParseError> {
+        let token = self.current_token.to_owned();
+
+        match token.literal.parse::<i64>() {
+            Ok(val) => Ok(Box::new(IntegerLiteral { token, value: val })),
+            Err(_val) => Err(ParseError {
+                message: format!(
+                    "expected INTEGER, got = {:?}",
+                    self.current_token.token_type
+                ),
+            }),
+        }
     }
 
     fn parse_let_statement(&mut self) -> Result<Box<dyn Statement>, ParseError> {
@@ -168,12 +182,6 @@ impl<'a> Parser<'a> {
             self.next_token();
             true
         } else {
-            self.errors.push(ParseError {
-                message: format!(
-                    "expected next token to be {:?}, got {:?} instead",
-                    t, self.peek_token.token_type
-                ),
-            });
             false
         };
     }
@@ -202,19 +210,18 @@ let foobar = 838383;
     }
 
     #[test]
-    fn test_invalid_statement() {
+    fn test_invalid_statements() {
         let input = r#"
 let x = 5;
 let = 10;
 let foobar = 838383;
-        "#;
-
+"#;
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         parser.parse_program();
         check_parser_errors(&parser);
 
-        assert_eq!(parser.errors.len(), 5);
+        assert_eq!(parser.errors.len(), 1);
     }
 
     #[test]
@@ -247,6 +254,21 @@ return 993322;
 
         for s in program.statements {
             assert_eq!(s.token_literal().to_owned(), "foobar");
+        }
+    }
+
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = r#"5;"#;
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        check_parser_errors(&parser);
+
+        assert_eq!(1, program.statements.len());
+
+        for s in program.statements {
+            assert_eq!(s.token_literal().to_owned(), "5");
         }
     }
 

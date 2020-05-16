@@ -113,6 +113,27 @@ impl Node for Identifier {
     }
 }
 
+pub struct IntegerLiteral {
+    pub token: Token,
+    pub value: i64,
+}
+
+impl Expression for IntegerLiteral {
+    fn expression_node(&self) {
+        unimplemented!();
+    }
+}
+
+impl Node for IntegerLiteral {
+    fn token_literal(&self) -> String {
+        self.token.literal.to_string()
+    }
+
+    fn to_string(&self) -> String {
+        self.value.to_string()
+    }
+}
+
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: Option<Box<dyn Expression>>,
@@ -163,7 +184,12 @@ mod tests {
         let program = Program {
             statements: vec![Box::new(let_statement)],
         };
-
         assert_eq!(program.to_string(), "let myVar = anotherVar;");
+
+        let integer_literal = IntegerLiteral {
+            token: Token::new(TokenType::INTEGER, "5".to_owned()),
+            value: 5,
+        };
+        assert_eq!(integer_literal.to_string(), "5");
     }
 }
