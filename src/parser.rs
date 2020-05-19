@@ -1,6 +1,6 @@
 use crate::ast::{
-    Expression, Identifier, IntegerLiteral, LetStatement, PrefixExpression, Program,
-    ReturnStatement, Statement,
+    Expression, Identifier, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
+    Program, ReturnStatement, Statement,
 };
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -18,7 +18,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub enum Precedence {
     LOWEST,
     EQUALS,      // ==
@@ -69,16 +69,16 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement(&mut self) -> Result<Box<Statement>, ParseError> {
-        match self.current_token.token_type {
-            TokenType::LET => self.parse_let_statement(),
-            TokenType::RETURN => self.parse_return_statement(),
-            _ => self.parse_expression_statement(),
-        }
+        Ok(match self.current_token.token_type {
+            TokenType::LET => Box::new(self.parse_let_statement()?),
+            TokenType::RETURN => Box::new(self.parse_return_statement()?),
+            _ => Box::new(self.parse_expression_statement()?),
+        })
     }
 
-    fn parse_expression_statement(&mut self) -> Result<Box<Statement>, ParseError> {
-        let expression = match self.parse_expression(Precedence::LOWEST as i8) {
-            Ok(expression) => Ok(Box::new(Statement::Expression(expression))),
+    fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
+        let expression = match self.parse_expression(Precedence::LOWEST) {
+            Ok(expression) => Ok(Statement::Expression(expression)),
             Err(error) => Err(error),
         };
 
@@ -90,17 +90,40 @@ impl<'a> Parser<'a> {
     }
 
     // TODO needs fixing as _ arm adds extra error
-    fn parse_expression(&mut self, _precedence: i8) -> Result<Expression, ParseError> {
-        Ok(match self.current_token.token_type {
+    fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, ParseError> {
+        let mut left_expr = match self.current_token.token_type {
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INTEGER => self.parse_integer_literal()?,
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression()?,
             _ => {
                 return Err(ParseError {
-                    message: format!("not reachable"),
+                    message: String::from("not implemented"),
                 })
             }
-        })
+        };
+
+        while !self.peek_token_is(&TokenType::SEMICOLON) && precedence < self.peek_precedence() {
+            match self.peek_token.token_type {
+                TokenType::PLUS
+                | TokenType::MINUS
+                | TokenType::SLASH
+                | TokenType::ASTERISK
+                | TokenType::EQ
+                | TokenType::NOTEQ
+                | TokenType::LT
+                | TokenType::GT => {
+                    self.next_token();
+                    left_expr = self.parse_infix_expression(Box::new(left_expr))?;
+                }
+                _ => {
+                    return Err(ParseError {
+                        message: format!("not parsable"),
+                    })
+                }
+            }
+        }
+
+        Ok(left_expr)
     }
 
     fn parse_identifier(&self) -> Expression {
@@ -129,7 +152,7 @@ impl<'a> Parser<'a> {
         let operator = self.current_token.literal.to_owned();
 
         self.next_token();
-        let right = Box::new(self.parse_expression(Precedence::PREFIX as i8)?);
+        let right = Box::new(self.parse_expression(Precedence::PREFIX)?);
 
         Ok(Expression::Prefix(PrefixExpression {
             token,
@@ -138,7 +161,22 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    fn parse_let_statement(&mut self) -> Result<Box<Statement>, ParseError> {
+    fn parse_infix_expression(&mut self, left: Box<Expression>) -> Result<Expression, ParseError> {
+        let token = self.current_token.to_owned();
+        let operator = self.current_token.literal.to_owned();
+
+        let precedence = self.current_precedence();
+        self.next_token();
+
+        Ok(Expression::Infix(InfixExpression {
+            token,
+            operator,
+            left,
+            right: Box::new(self.parse_expression(precedence)?),
+        }))
+    }
+
+    fn parse_let_statement(&mut self) -> Result<Statement, ParseError> {
         let token = self.current_token.clone();
 
         if !self.expect_peek(&TokenType::IDENT) {
@@ -169,20 +207,20 @@ impl<'a> Parser<'a> {
             self.next_token();
         }
 
-        Ok(Box::new(Statement::Let(LetStatement {
+        Ok(Statement::Let(LetStatement {
             token,
             name: identifier,
-        })))
+        }))
     }
 
-    fn parse_return_statement(&mut self) -> Result<Box<Statement>, ParseError> {
+    fn parse_return_statement(&mut self) -> Result<Statement, ParseError> {
         let token = self.current_token.clone();
 
         while !self.current_token_is(&TokenType::SEMICOLON) {
             self.next_token();
         }
 
-        Ok(Box::new(Statement::Return(ReturnStatement { token })))
+        Ok(Statement::Return(ReturnStatement { token }))
     }
 
     fn current_token_is(&self, t: &TokenType) -> bool {
@@ -200,6 +238,24 @@ impl<'a> Parser<'a> {
         } else {
             false
         };
+    }
+
+    fn precedence_for(&self, token: &TokenType) -> Precedence {
+        match token {
+            TokenType::EQ | TokenType::NOTEQ => Precedence::EQUALS,
+            TokenType::LT | TokenType::GT => Precedence::LESSGREATER,
+            TokenType::PLUS | TokenType::MINUS => Precedence::SUM,
+            TokenType::SLASH | TokenType::ASTERISK => Precedence::PRODUCT,
+            _ => Precedence::LOWEST,
+        }
+    }
+
+    fn peek_precedence(&self) -> Precedence {
+        self.precedence_for(&self.peek_token.token_type)
+    }
+
+    fn current_precedence(&self) -> Precedence {
+        self.precedence_for(&self.current_token.token_type)
     }
 }
 
@@ -280,15 +336,13 @@ return 993322;
         let program = parser.parse_program();
         check_parser_errors(&parser);
 
-        assert_eq!(1, program.statements.len());
-
         for s in program.statements {
             assert_eq!(s.to_string(), "5");
         }
     }
 
     #[test]
-    fn test_prefix_infix_operator() {
+    fn test_prefix_expression() {
         let input = r#"!5;"#;
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -299,6 +353,50 @@ return 993322;
 
         for s in program.statements {
             assert_eq!(s.to_string(), "(!5)");
+        }
+    }
+
+    #[test]
+    fn test_infix_expression() {
+        let tests = vec![
+            ("5 + 5;", 5, "+", 5),
+            ("5 - 5;", 5, "-", 5),
+            ("5 * 5;", 5, "*", 5),
+            ("5 / 5;", 5, "/", 5),
+            ("5 > 5;", 5, ">", 5),
+            ("5 < 5;", 5, "<", 5),
+            ("5 == 5;", 5, "==", 5),
+            ("5 != 5;", 5, "!=", 5),
+        ];
+
+        for (input, left, operator, right) in tests {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
+            let operator = operator.to_owned();
+
+            let program = parser.parse_program();
+            check_parser_errors(&parser);
+
+            assert_eq!(
+                program.statements,
+                vec![Box::new(Statement::Expression(Expression::Infix(
+                    InfixExpression {
+                        token: Token::new(
+                            operator.parse::<TokenType>().unwrap(),
+                            operator.to_owned()
+                        ),
+                        left: Box::new(Expression::Integer(IntegerLiteral {
+                            token: Token::new(TokenType::INTEGER, left.to_string()),
+                            value: left,
+                        })),
+                        operator,
+                        right: Box::new(Expression::Integer(IntegerLiteral {
+                            token: Token::new(TokenType::INTEGER, right.to_string()),
+                            value: right,
+                        }))
+                    }
+                )))]
+            );
         }
     }
 

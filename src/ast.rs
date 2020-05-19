@@ -77,6 +77,7 @@ pub enum Expression {
     Identifier(Identifier),
     Integer(IntegerLiteral),
     Prefix(PrefixExpression),
+    Infix(InfixExpression),
 }
 
 impl fmt::Display for Expression {
@@ -85,6 +86,9 @@ impl fmt::Display for Expression {
             Expression::Identifier(ident) => write!(f, "{}", ident),
             Expression::Integer(val) => write!(f, "{}", val),
             Expression::Prefix(prefix) => write!(f, "({}{})", prefix.operator, prefix.right),
+            Expression::Infix(infix) => {
+                write!(f, "({}{}{})", infix.left, infix.operator, infix.right)
+            }
         }
     }
 }
@@ -121,6 +125,20 @@ pub struct PrefixExpression {
 }
 
 impl fmt::Display for PrefixExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}{})", self.operator, self.right)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct InfixExpression {
+    pub token: Token,
+    pub left: Box<Expression>,
+    pub operator: String,
+    pub right: Box<Expression>,
+}
+
+impl fmt::Display for InfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}{})", self.operator, self.right)
     }

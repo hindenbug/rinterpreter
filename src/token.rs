@@ -76,9 +76,11 @@ impl FromStr for TokenType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "=" => Ok(TokenType::ASSIGN),
+            "==" => Ok(TokenType::EQ),
             "+" => Ok(TokenType::PLUS),
             "-" => Ok(TokenType::MINUS),
             "!" => Ok(TokenType::BANG),
+            "!=" => Ok(TokenType::NOTEQ),
             "*" => Ok(TokenType::ASTERISK),
             "/" => Ok(TokenType::SLASH),
             "<" => Ok(TokenType::LT),
