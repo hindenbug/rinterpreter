@@ -87,7 +87,7 @@ impl fmt::Display for Expression {
             Expression::Integer(val) => write!(f, "{}", val),
             Expression::Prefix(prefix) => write!(f, "({}{})", prefix.operator, prefix.right),
             Expression::Infix(infix) => {
-                write!(f, "({}{}{})", infix.left, infix.operator, infix.right)
+                write!(f, "({} {} {})", infix.left, infix.operator, infix.right)
             }
         }
     }

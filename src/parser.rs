@@ -377,6 +377,7 @@ return 993322;
             let program = parser.parse_program();
             check_parser_errors(&parser);
 
+            assert_eq!(parser.errors.len(), 0);
             assert_eq!(
                 program.statements,
                 vec![Box::new(Statement::Expression(Expression::Infix(
@@ -397,6 +398,37 @@ return 993322;
                     }
                 )))]
             );
+        }
+    }
+
+    #[test]
+    fn test_operator_precedence_parsing() {
+        let tests = [
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+        ];
+
+        for (input, expected) in tests.iter() {
+            let l = Lexer::new(input);
+            let mut parser = Parser::new(l);
+            let program = parser.parse_program();
+            check_parser_errors(&parser);
+
+            assert_eq!(parser.errors.len(), 0);
+            assert_eq!(format!("{}", program), *expected);
         }
     }
 
