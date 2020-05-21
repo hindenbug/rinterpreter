@@ -1,6 +1,6 @@
 use crate::ast::{
-    Expression, Identifier, InfixExpression, IntegerLiteral, LetStatement, PrefixExpression,
-    Program, ReturnStatement, Statement,
+    BooleanExpression, Expression, Identifier, InfixExpression, IntegerLiteral, LetStatement,
+    PrefixExpression, Program, ReturnStatement, Statement,
 };
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -94,6 +94,7 @@ impl<'a> Parser<'a> {
         let mut left_expr = match self.current_token.token_type {
             TokenType::IDENT => self.parse_identifier(),
             TokenType::INTEGER => self.parse_integer_literal()?,
+            TokenType::TRUE | TokenType::FALSE => self.parse_boolean_expression()?,
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression()?,
             _ => {
                 return Err(ParseError {
@@ -131,6 +132,13 @@ impl<'a> Parser<'a> {
             token: self.current_token.to_owned(),
             value: self.current_token.literal.to_owned(),
         })
+    }
+
+    fn parse_boolean_expression(&mut self) -> Result<Expression, ParseError> {
+        Ok(Expression::Boolean(BooleanExpression {
+            token: self.current_token.to_owned(),
+            value: self.current_token_is(&TokenType::TRUE),
+        }))
     }
 
     fn parse_integer_literal(&mut self) -> Result<Expression, ParseError> {
@@ -343,16 +351,22 @@ return 993322;
 
     #[test]
     fn test_prefix_expression() {
-        let input = r#"!5;"#;
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
-        check_parser_errors(&parser);
+        let tests = vec![
+            ("!5;", "!", "(!5)"),
+            ("-15;", "-", "(-15)"),
+            ("!true;", "!", "(!true)"),
+            ("!false;", "!", "(!false)"),
+        ];
 
-        assert_eq!(1, program.statements.len());
+        for (input, _operator, expected) in tests {
+            let lexer = Lexer::new(input);
+            let mut parser = Parser::new(lexer);
 
-        for s in program.statements {
-            assert_eq!(s.to_string(), "(!5)");
+            let program = parser.parse_program();
+            check_parser_errors(&parser);
+
+            assert_eq!(parser.errors.len(), 0);
+            assert_eq!(format!("{}", program), *expected);
         }
     }
 
@@ -394,11 +408,21 @@ return 993322;
                         right: Box::new(Expression::Integer(IntegerLiteral {
                             token: Token::new(TokenType::INTEGER, right.to_string()),
                             value: right,
-                        }))
+                        })),
                     }
                 )))]
             );
         }
+    }
+
+    #[test]
+    fn infix_expression_boolean() {
+        let _tests = vec![
+            ("true == true", true, "==", true),
+            ("true != false", true, "!=", false),
+            ("false == false", false, "==", false),
+        ];
+        //TODO
     }
 
     #[test]
@@ -419,7 +443,26 @@ return 993322;
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
             ),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("3 < 5 == true", "((3 < 5) == true)"),
         ];
+
+        for (input, expected) in tests.iter() {
+            let l = Lexer::new(input);
+            let mut parser = Parser::new(l);
+            let program = parser.parse_program();
+            check_parser_errors(&parser);
+
+            assert_eq!(parser.errors.len(), 0);
+            assert_eq!(format!("{}", program), *expected);
+        }
+    }
+
+    #[test]
+    fn test_boolean_expression() {
+        let tests = vec![("true;", "true"), ("false;", "false")];
 
         for (input, expected) in tests.iter() {
             let l = Lexer::new(input);

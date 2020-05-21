@@ -16,7 +16,7 @@ impl fmt::Display for Node {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Program {
     pub statements: Vec<Box<Statement>>,
 }
@@ -78,6 +78,7 @@ pub enum Expression {
     Integer(IntegerLiteral),
     Prefix(PrefixExpression),
     Infix(InfixExpression),
+    Boolean(BooleanExpression),
 }
 
 impl fmt::Display for Expression {
@@ -85,10 +86,9 @@ impl fmt::Display for Expression {
         match self {
             Expression::Identifier(ident) => write!(f, "{}", ident),
             Expression::Integer(val) => write!(f, "{}", val),
-            Expression::Prefix(prefix) => write!(f, "({}{})", prefix.operator, prefix.right),
-            Expression::Infix(infix) => {
-                write!(f, "({} {} {})", infix.left, infix.operator, infix.right)
-            }
+            Expression::Prefix(prefix) => prefix.fmt(f),
+            Expression::Infix(infix) => infix.fmt(f),
+            Expression::Boolean(boolean) => boolean.fmt(f),
         }
     }
 }
@@ -140,7 +140,19 @@ pub struct InfixExpression {
 
 impl fmt::Display for InfixExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}{})", self.operator, self.right)
+        write!(f, "({} {} {})", self.left, self.operator, self.right)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct BooleanExpression {
+    pub token: Token,
+    pub value: bool,
+}
+
+impl fmt::Display for BooleanExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value)
     }
 }
 
