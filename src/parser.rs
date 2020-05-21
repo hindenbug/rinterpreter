@@ -5,7 +5,6 @@ use crate::ast::{
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 use std::fmt;
-use std::thread::current;
 
 #[derive(Debug)]
 pub struct ParseError {
@@ -270,7 +269,6 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Display;
 
     #[test]
     fn test_let_statements() {

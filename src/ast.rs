@@ -1,6 +1,5 @@
 use crate::token::Token;
 use std::fmt;
-use std::path::Prefix;
 
 pub enum Node {
     Program(Program),
@@ -84,8 +83,8 @@ pub enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Identifier(ident) => write!(f, "{}", ident),
-            Expression::Integer(val) => write!(f, "{}", val),
+            Expression::Identifier(ident) => ident.fmt(f),
+            Expression::Integer(int) => int.fmt(f),
             Expression::Prefix(prefix) => prefix.fmt(f),
             Expression::Infix(infix) => infix.fmt(f),
             Expression::Boolean(boolean) => boolean.fmt(f),
@@ -160,7 +159,6 @@ impl fmt::Display for BooleanExpression {
 mod tests {
     use super::*;
     use crate::token::TokenType;
-    use std::fmt::Display;
 
     #[test]
     fn test_string() {
